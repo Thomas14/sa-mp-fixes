@@ -609,7 +609,7 @@
  * AUTHOR:   Emmet_
  *
  *
- * FIX:      ApplyAnimation_3
+ * FIX:      ApplyAnimation
  * PROBLEM:  Using this function under "OnPlayerRequestClass" doesn't work when
 			 player is on the selection for the first time since connected.
  * SOLUTION: ApplyAnimation has to be called twice at that time and the second
@@ -1829,16 +1829,16 @@ static stock
 	/*
 	 * FIXES_gsClassReached[MAX_PLAYERS],
 	 * FIXES_gsClassAnimTimer[MAX_PLAYERS],
-	 * FIXES_gsClassAnimLibName[MAX_PLAYERS][60][2],
+	 * FIXES_gsClassAnimName[MAX_PLAYERS][60],
 	 *
 	 * - Used for checking if player is on class selection for the first time.
 	 * - Used for storing the timer ID.
-	 * - Used for storing the animation library and name.
+	 * - Used for storing the animation name.
 	 */
 #if FIX_ApplyAnimation_3
 	 FIXES_gsClassReached[MAX_PLAYERS] = {-1, ...},
 	 FIXES_gsClassAnimTimer[MAX_PLAYERS] = {-1, ...},
-	 FIXES_gsClassAnimLibName[MAX_PLAYERS][2][60],
+	 FIXES_gsClassAnimName[MAX_PLAYERS][60],
 #endif
 
 	/*
@@ -7676,12 +7676,11 @@ native BAD_ApplyAnimation(playerid, animlib[], animname[], Float:fDelta, loop, l
     								strcat((%0[0] = '\0', %0), %1, %2)
 								#define FIXES_STRCPYISDEFINEDANIM
 							#endif
-							strcpy(FIXES_gsClassAnimLibName[playerid][0], animlib, 60);
-							strcpy(FIXES_gsClassAnimLibName[playerid][1], animname, 60);
+							strcpy(FIXES_gsClassAnimName[playerid], animname, 60);
 							#if defined FIXES_STRCPYISDEFINEDANIM
 						    	#undef strcpy
 							#endif
-							FIXES_gsClassAnimTimer[playerid] = SetTimerEx("FIXES_classanimtimpub", 350, false, "dfdddddd", playerid, fDelta, loop, lockx, locky, freeze, time, forcesync);
+							FIXES_gsClassAnimTimer[playerid] = SetTimerEx("FIXES_classanimtimpub", 350, false, "ddfdddddd", playerid, idx, fDelta, loop, lockx, locky, freeze, time, forcesync);
 						}
 						return ret;
 					#else
@@ -7698,12 +7697,12 @@ native BAD_ApplyAnimation(playerid, animlib[], animname[], Float:fDelta, loop, l
 #endif
 
 #if FIX_ApplyAnimation_3
-forward FIXES_classanimtimpub(playerid, Float:fDelta, loop, lockx, locky, freeze, time, forcesync);
-public FIXES_classanimtimpub(playerid, Float:fDelta, loop, lockx, locky, freeze, time, forcesync)
+forward FIXES_classanimtimpub(playerid, animlib, Float:fDelta, loop, lockx, locky, freeze, time, forcesync);
+public FIXES_classanimtimpub(playerid, animlib, Float:fDelta, loop, lockx, locky, freeze, time, forcesync)
 {
 	if(IsPlayerConnected(playerid) && FIXES_gsClassReached[playerid] == 1)
 	{
-	    ApplyAnimation(playerid, FIXES_gsClassAnimLibName[playerid][0], FIXES_gsClassAnimLibName[playerid][1], fDelta, loop, lockx, locky, freeze, time, forcesync);
+	    ApplyAnimation(playerid, FIXES_gscAnimLib[animlib], FIXES_gsClassAnimName[playerid], fDelta, loop, lockx, locky, freeze, time, forcesync);
 	}
 	FIXES_gsClassAnimTimer[playerid] = -1;
 	return 1;
@@ -8054,5 +8053,4 @@ native BAD_NameOfFixHere(params) = NameOfFixHere;
 	#define _ALS_NameOfFixHere
 	#define NameOfFixHere FIXES_NameOfFixHere
 #endif
-
 
