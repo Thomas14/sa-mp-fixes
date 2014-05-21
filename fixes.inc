@@ -608,6 +608,7 @@
  * SEE:      "FIXES_SetPlayerTime"
  * AUTHOR:   Emmet_
  *
+ *
  * FIX:      ApplyAnimation
  * PROBLEM:  Using this function under "OnPlayerRequestClass" doesn't work when
 			 player is on the selection for the first time since connected.
@@ -1345,6 +1346,13 @@
 	#define FIX_ApplyAnimation_2         (2)
 #endif
 
+#if !defined FIX_ApplyAnimation_3
+	#define FIX_ApplyAnimation_3        (1)
+#elseif _FIXES_IS_UNSET(FIX_ApplyAnimation_3)
+	#undef FIX_ApplyAnimation_3
+	#define FIX_ApplyAnimation_3        (2)
+#endif
+
 #if !defined FIX_OnPlayerSpawn
 	#define FIX_OnPlayerSpawn            (1)
 #elseif _FIXES_IS_UNSET(FIX_OnPlayerSpawn)
@@ -1382,7 +1390,6 @@
 	#define FIX_OnPlayerConnect          (2)
 #endif
 
-
 #if !defined FIX_OnPlayerDisconnect
 	#define FIX_OnPlayerDisconnect       (1)
 #elseif _FIXES_IS_UNSET(FIX_OnPlayerDisconnect)
@@ -1417,14 +1424,6 @@
 	#undef FIX_SetPlayerTime
 	#define FIX_SetPlayerTime   		 (2)
 #endif
-
-#if !defined FIX_OnPlayerRequestClass
-	#define FIX_OnPlayerRequestClass    (1)
-#elseif _FIXES_IS_UNSET(FIX_OnPlayerRequestClass)
-	#undef FIX_OnPlayerRequestClass
-	#define FIX_OnPlayerRequestClass    (2)
-#endif
-
 
 /*
  * CHAIN_ORDER
@@ -1822,37 +1821,26 @@ static stock
 	 * The pre-defined TextDraw styles used to recreate the bugged GameText
 	 * styles for GameTextForAll.
 	 */
-#if FIX_ApplyAnimation
-	/*
-	 * FIXES_gsClassReached[MAX_PLAYERS]
-	 *
-	 * Used for checking if the player has reached the class for first time.
-	 *
-	 * FIXES_gsClassAnim_x[MAX_PLAYERS]
-	 *
-	 * Used for linking it up with ApplyAnimation when the timer is over.
-	 *
-	 * FIXES_gsClassAnimTimer[MAX_PLAYERS]
-	 *
-	 * To store the class animation timer ID.
-	 *
-	 */
-	FIXES_gsClassReached[MAX_PLAYERS],
-	FIXES_gsClassAnimTimer[MAX_PLAYERS] = {-1, ...}, //Default ID = -1
-	FIXES_gsClassAnim_Lib[MAX_PLAYERS][60],
-	FIXES_gsClassAnim_Name[MAX_PLAYERS][60],
-	Float:FIXES_gsClassAnim_fDelta[MAX_PLAYERS],
-	FIXES_gsClassAnim_Loop[MAX_PLAYERS],
-	FIXES_gsClassAnim_LockX[MAX_PLAYERS],
-	FIXES_gsClassAnim_LockY[MAX_PLAYERS],
-	FIXES_gsClassAnim_Freeze[MAX_PLAYERS],
-	FIXES_gsClassAnim_Time[MAX_PLAYERS],
-	FIXES_gsClassAnim_Sync[MAX_PLAYERS],
-#endif
 
 #if FIX_GameText
 	Text:FIXES_gsGTStyle[FIXES_GT_STYLE_COUNT],
 #endif
+
+	/*
+	 * FIXES_gsClassReached[MAX_PLAYERS],
+	 * FIXES_gsClassAnimTimer[MAX_PLAYERS],
+	 * FIXES_gsClassAnimLibName[MAX_PLAYERS][60][2],
+	 *
+	 * - Used for checking if player is on class selection for the first time.
+	 * - Used for storing the timer ID.
+	 * - Used for storing the animation library and name.
+	 */
+#if FIX_ApplyAnimation_3
+	 FIXES_gsClassReached[MAX_PLAYERS] = {-1, ...},
+	 FIXES_gsClassAnimTimer[MAX_PLAYERS] = {-1, ...},
+	 FIXES_gsClassAnimLibName[MAX_PLAYERS][2][60],
+#endif
+
 	/*
 	 * FIXES_gsPlayerPGTShown[FIXES_GT_STYLE_COUNT][MAX_PLAYERS + 1]
 	 *
@@ -2270,8 +2258,6 @@ static stock const
 			0, 2, 21, 35, 42, 42, 53, 62, 64, 67, 68, 71, 75, 81, 82, 84, 94, 96, 104, 121, 126, 127, 130, 134
 		},
 #endif
-
-
 	/*
 	 * FIXES_gscAnimLib[]
 	 *
@@ -3499,7 +3485,6 @@ _FIXES_FORWARD FIXES_OnGameModeInit();
  *     ApplyAnimation_2
  */
 
-
 #if     FIX_SetPlayerWorldBounds || FIX_TogglePlayerControllable || FIX_SetPlayerName            || FIX_GetPlayerColour
 	#define _FIXES_ON_PLAYER_CONNECT
 #elseif FIX_GetPlayerSkin        || FIX_IsPlayerInCheckpoint     || FIX_IsPlayerInRaceCheckpoint || FIX_GetPlayerWeapon
@@ -3514,15 +3499,17 @@ _FIXES_FORWARD FIXES_OnGameModeInit();
 	#define _FIXES_ON_PLAYER_CONNECT
 #elseif FIX_GetPlayerMenu        || FIX_OnPlayerDisconnect       || FIX_OnPlayerConnect          || FIX_SetPlayerTime
 	#define _FIXES_ON_PLAYER_CONNECT
+#elseif FIX_ApplyAnimation_3
+	#define _FIXES_ON_PLAYER_CONNECT
 #endif
-
 
 #if defined _FIXES_ON_PLAYER_CONNECT
 	public OnPlayerConnect(playerid)
 	{
-	    #if FIX_ApplyAnimation
-	        FIXES_gsClassReached[playerid] = -1;
+	    #if FIX_ApplyAnimation_3
+			FIXES_gsClassReached[playerid] = -1;
 		#endif
+
 		#if _FIX_Menus || FIX_GetPlayerMenu || FIX_OnPlayerDisconnect || FIX_GameText || FIX_AllowInteriorWeapons || FIX_SetPlayerWorldBounds || FIX_TogglePlayerControllable
 			_FIXES_AddInternal(FIXES_gsPlayersIterator, playerid, MAX_PLAYERS);
 		#endif
@@ -3755,6 +3742,8 @@ _FIXES_FORWARD FIXES_OnGameModeInit();
  *     GetPlayerMenu
  */
 
+
+
 #if FIX_SetPlayerAttachedObject || FIX_IsPlayerAttachedObjSlotUsed || FIX_Kick || (FIXES_SilentKick && (FIX_OnVehicleMod || FIX_OnPlayerEnterVehicle || FIX_OnPlayerEnterVehicle_2)) || FIX_GetPlayerMenu || _FIX_Menus || FIX_OnPlayerDisconnect || FIX_GameText || FIX_AllowInteriorWeapons || FIX_SetPlayerWorldBounds || FIX_TogglePlayerControllable
 	public OnPlayerDisconnect(playerid, reason)
 	{
@@ -3860,50 +3849,47 @@ _FIXES_FORWARD FIXES_OnGameModeInit();
 	_FIXES_FORWARD FIXES_OnPlayerDisconnect(playerid, reason);
 #endif
 
-
 /*
- * OnPlayerRequestClass
+ * OnPlayerRequestClass(playerid, classid)
  *
  * FIXES:
- *      ApplyAnimation
+ *      ApplyAnimation_3
  */
 
-
-#if	FIX_ApplyAnimation
+#if FIX_ApplyAnimation_3
 	#define _FIXES_ON_PLAYER_REQUEST_CLASS
 #endif
 
 #if defined _FIXES_ON_PLAYER_REQUEST_CLASS
-
 	public OnPlayerRequestClass(playerid, classid)
 	{
-		// ==========================
-		//  BEGIN : ApplyAnimation
-		// ==========================
-		#if FIX_ApplyAnimation
-			if(FIXES_gsClassReached[playerid] == -1)
-			{
-			    FIXES_gsClassReached[playerid] = 1;
+	    // ===========================
+	    // BEGIN : ApplyAnimation_3
+	    // ===========================
+	    #if FIX_ApplyAnimation_3
+	        if(FIXES_gsClassReached[playerid] == -1)
+	        {
+	            FIXES_gsClassReached[playerid] = 1;
 			}
 			else if(FIXES_gsClassReached[playerid] == 1)
 			{
 			    FIXES_gsClassReached[playerid] = 0;
 			}
 		#endif
-		// ==========================
-		// END : ApplyAnimation
-		// ==========================
+		// ============================
+		//  END : ApplyAnimation_3
+		// ============================
 		return FIXES_OnPlayerRequestClass(playerid, classid);
 	}
+
 	#if defined _ALS_OnPlayerRequestClass
-	    #error _ALS_OnPlayerRequestClass defined
+		#error _ALS_OnPlayerRequestClass defined
 	#endif
 	#define _ALS_OnPlayerRequestClass
 	#define OnPlayerRequestClass(%0) FIXES_OnPlayerRequestClass(%0) <_FIXES_ALS : _FIXES_ALS_go>
 
 	_FIXES_FORWARD FIXES_OnPlayerRequestClass(playerid, classid);
 #endif
-
 
 /*
  * OnPlayerDeath(playerid, killerid, reason)
@@ -7680,30 +7666,27 @@ native BAD_ApplyAnimation(playerid, animlib[], animname[], Float:fDelta, loop, l
 				}
 				else
 				{
-    				new
-						ret = ApplyAnimation(playerid, animlib, animname, fDelta, loop, lockx, locky, freeze, time, forcesync);
-					if(FIXES_gsClassReached[playerid] == 1 && FIXES_gsClassAnimTimer[playerid] == -1)
-					{
-					    #if !defined strcpy
-					    	#define strcpy(%0,%1,%2) \
-    							strcat((%0[0] = '\0', %0), %1, %2)
-							#define FIXES_STRCPYISDEFINEDANIM
-						#endif
-							strcpy(FIXES_gsClassAnim_Lib[playerid], animlib, 60);
-							strcpy(FIXES_gsClassAnim_Name[playerid], animname, 60);
-						#if defined FIXES_STRCPYISDEFINEDANIM
-						    #undef strcpy
-						#endif
-							FIXES_gsClassAnim_fDelta[playerid] = fDelta;
-							FIXES_gsClassAnim_Loop[playerid] = loop;
-							FIXES_gsClassAnim_LockX[playerid] = lockx;
-							FIXES_gsClassAnim_LockY[playerid] = locky;
-							FIXES_gsClassAnim_Freeze[playerid] = freeze;
-							FIXES_gsClassAnim_Time[playerid] = time;
-							FIXES_gsClassAnim_Sync[playerid] = forcesync;
-							FIXES_gsClassAnimTimer[playerid] = SetTimerEx("FIXES_ClassAnimTimer", 350, false, "d", playerid);
-					}
-					return ret;
+				    #if FIX_ApplyAnimation_3
+				        new
+				            ret = ApplyAnimation(playerid, animlib, animname, fDelta, loop, lockx, locky, freeze, time, forcesync);
+						if(FIXES_gsClassReached[playerid] == 1 && FIXES_gsClassAnimTimer[playerid] == -1)
+						{
+		    				#if !defined strcpy
+					    		#define strcpy(%0,%1,%2) \
+    								strcat((%0[0] = '\0', %0), %1, %2)
+								#define FIXES_STRCPYISDEFINEDANIM
+							#endif
+							strcpy(FIXES_gsClassAnimLibName[playerid][0], animlib, 60);
+							strcpy(FIXES_gsClassAnimLibName[playerid][1], animname, 60);
+							#if defined FIXES_STRCPYISDEFINEDANIM
+						    	#undef strcpy
+							#endif
+							FIXES_gsClassAnimTimer[playerid] = SetTimerEx("FIXES_classanimtimpub", 350, false, "dfdddddd", playerid, fDelta, loop, lockx, locky, freeze, time, forcesync);
+						}
+						return ret;
+					#else
+						return ApplyAnimation(playerid, animlib, animname, fDelta, loop, lockx, locky, freeze, time, forcesync);
+					#endif
 				}
 			}
 		}
@@ -7714,22 +7697,17 @@ native BAD_ApplyAnimation(playerid, animlib[], animname[], Float:fDelta, loop, l
 	#define ApplyAnimation FIXES_ApplyAnimation
 #endif
 
-#if FIX_ApplyAnimation
-	forward FIXES_ClassAnimTimer(playerid);
-
-	public FIXES_ClassAnimTimer(playerid)
+#if FIX_ApplyAnimation_3
+forward FIXES_classanimtimpub(playerid, Float:fDelta, loop, lockx, locky, freeze, time, forcesync);
+public FIXES_classanimtimpub(playerid, Float:fDelta, loop, lockx, locky, freeze, time, forcesync)
+{
+	if(IsPlayerConnected(playerid) && FIXES_gsClassReached[playerid] == 1)
 	{
-	    if(IsPlayerConnected(playerid) && FIXES_gsClassReached[playerid] == 1)
-	    {
-	        ApplyAnimation(playerid, FIXES_gsClassAnim_Lib[playerid],
-	            FIXES_gsClassAnim_Name[playerid], FIXES_gsClassAnim_fDelta[playerid],
-	            FIXES_gsClassAnim_Loop[playerid], FIXES_gsClassAnim_LockX[playerid],
-	            FIXES_gsClassAnim_LockY[playerid], FIXES_gsClassAnim_Freeze[playerid],
-	            FIXES_gsClassAnim_Time[playerid], FIXES_gsClassAnim_Sync[playerid]);
-		}
-		FIXES_gsClassAnimTimer[playerid] = -1;
-		return 1;
+	    ApplyAnimation(playerid, FIXES_gsClassAnimLibName[playerid][0], FIXES_gsClassAnimLibName[playerid][1], fDelta, loop, lockx, locky, freeze, time, forcesync);
 	}
+	FIXES_gsClassAnimTimer[playerid] = -1;
+	return 1;
+}
 #endif
 
 /*
@@ -8076,4 +8054,5 @@ native BAD_NameOfFixHere(params) = NameOfFixHere;
 	#define _ALS_NameOfFixHere
 	#define NameOfFixHere FIXES_NameOfFixHere
 #endif
+
 
