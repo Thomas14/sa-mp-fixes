@@ -609,7 +609,7 @@
  * AUTHOR:   Emmet_
  *
  *
- * FIX:      ApplyAnimation
+ * FIX:      ApplyAnimation_3
  * PROBLEM:  Using this function under "OnPlayerRequestClass" doesn't work when
 			 player is on the selection for the first time since connected.
  * SOLUTION: ApplyAnimation has to be called twice at that time and the second
